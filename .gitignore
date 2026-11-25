@@ -1,7 +1,13 @@
 # Ignorar pasta de documentos (PDFs e arquivos locais)
 documentos/
 
-
 # Arquivos de sistema
 .DS_Store
 Thumbs.db
+
+# Servidor de autorização (Java)
+target/
+libs/
+logs/
+*.p12
+*.crt

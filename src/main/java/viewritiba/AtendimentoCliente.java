@@ -56,11 +56,14 @@ public class AtendimentoCliente implements Runnable {
         }
         String[] partes = linha.split(";", -1);
         try {
-            return switch (partes[0]) {
-                case "LOGIN" -> login(linha);
-                case "LOGOUT" -> logout(partes);
-                default -> throw new IllegalArgumentException("comando desconhecido");
-            };
+            
+return switch (partes[0]) {
+    case "LOGIN" -> login(linha);
+    case "LOGOUT" -> logout(partes);
+    case "AUTORIZAR" -> autorizar(partes);
+    default -> throw new IllegalArgumentException("comando desconhecido");
+};
+
         } catch (IllegalArgumentException erro) {
             RegistroSeguranca.registrar(ip, "-", "ENTRADA_INVALIDA", partes[0]);
             return "ERRO;ENTRADA_INVALIDA";
@@ -98,4 +101,47 @@ public class AtendimentoCliente implements Runnable {
         RegistroSeguranca.registrar(ip, "-", "LOGOUT", "OK");
         return "OK";
     }
+
+private String autorizar(String[] p) {
+
+    if (p.length != 3 || p[1].isBlank()) {
+        throw new IllegalArgumentException("autorizacao invalida");
+    }
+
+    if (!"EXCLUIR_CATEGORIA".equals(p[2])) {
+        throw new IllegalArgumentException("operacao desconhecida");
+    }
+
+    Usuario usuario = sessoes.validar(p[1]);
+
+    if (usuario == null) {
+        RegistroSeguranca.registrar(
+            ip, "-", "EXCLUIR_CATEGORIA",
+            "NEGADO - Sessao invalida"
+        );
+
+        return "NEGADO;SESSAO_INVALIDA";
+    }
+
+    String quem = usuario.tipo() + ":"
+        + RegistroSeguranca.mascarar(usuario.login())
+        + " #" + usuario.id();
+
+    if (!ControleAcesso.podeExcluirCategoria(usuario)) {
+        RegistroSeguranca.registrar(
+            ip, quem, "EXCLUIR_CATEGORIA",
+            "NEGADO - Permissao insuficiente"
+        );
+
+        return "NEGADO;SEM_PERMISSAO";
+    }
+
+    RegistroSeguranca.registrar(
+        ip, quem, "EXCLUIR_CATEGORIA",
+        "PERMITIDO"
+    );
+
+    return "OK;PERMITIDO";
+}
+
 }
